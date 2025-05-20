@@ -6,7 +6,7 @@
 const tintColorLight = '#0a7ea4';
 const tintColorDark = '#fff';
 
-const Colors = {
+export const Colors = {
   light: { // Modo Claro
     text: '#11181C',
     background: '#fff',
@@ -57,5 +57,3 @@ const Colors = {
     placeholder: '#707070', // Color para texto de placeholder en inputs oscuros
   },
 };
-
-export default Colors;
