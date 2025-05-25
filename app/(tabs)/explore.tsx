@@ -46,13 +46,7 @@ export default function ExploreScreen() {
 
     setData([...data, { id: Date.now().toString(), ...newItem }]);
     setModalVisible(false);
-    setNewItem({
-      metodo: '',
-      banco: '',
-      monto: '',
-      fecha: '',
-      establecimiento: '',
-      categoria: ''
+    setNewItem({ metodo: '', banco: '', monto: '', fecha: '', establecimiento: '', categoria: ''
     });
   };
 
@@ -102,7 +96,7 @@ export default function ExploreScreen() {
             <Text style={styles.cell}>{item.establecimiento}</Text>
             <Text style={styles.cell}>{item.categoria}</Text>
             <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around' }}>
-              <TouchableOpacity onPress={() => {/* lógica para editar */ }}>
+              <TouchableOpacity onPress={() => {/* lógica para el botón editar */ }}>
                 <Ionicons name="create-outline" size={18} color={Colors.light.text} />
               </TouchableOpacity>
               <TouchableOpacity onPress={() => {
