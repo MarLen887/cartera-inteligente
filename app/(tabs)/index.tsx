@@ -1,75 +1,248 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
+import React, { useState } from 'react';
+import { Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+type IconoValido = 'wallet' | 'card' | 'cash-outline';
+
+interface Movimiento {
+  id: string;
+  icono: IconoValido;
+  color: string;
+  cantidad: number;
+  valor: number;
+  variacion: number;
+}
 
 export default function HomeScreen() {
+  const [balance, setBalance] = useState<number>(8);
+  const [movimientos, setMovimientos] = useState<Movimiento[]>([
+    {
+      id: '1',
+      icono: 'cash-outline',
+      color: '#5B4FE9',
+      cantidad: 25.895325,
+      valor: 89.759,
+      variacion: 4.89,
+    },
+    {
+      id: '2',
+      icono: 'card',
+      color: '#F44336',
+      cantidad: 15.789325,
+      valor: 54.724,
+      variacion: 54.23,
+    },
+    {
+      id: '3',
+      icono: 'wallet',
+      color: '#6E6E6E',
+      cantidad: 5.679121,
+      valor: 5.385,
+      variacion: -5.95,
+    },
+  ]);
+
+  const handleFooterAction = (action: string) => {
+    switch (action) {
+      case 'wallet':
+        Alert.alert('Cartera', 'Aquí podrías mostrar tus activos o agregar uno nuevo.');
+        break;
+      case 'stats':
+        Alert.alert('Estadísticas', 'Aquí podrías mostrar gráficas de tu balance.');
+        break;
+      case 'settings':
+        Alert.alert('Ajustes', 'Aquí podrías configurar tu cuenta o preferencias.');
+        break;
+    }
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      <Text style={styles.header}>CARTERA INTELIGENTE</Text>
+
+      <ScrollView contentContainerStyle={styles.mainContent}>
+        {/* Tarjeta izquierda: Balance Total */}
+        <View style={styles.balanceCard}>
+  <View style={styles.balanceContent}>
+    <View style={styles.balanceLeft}>
+      <Text style={styles.label}>Balance Total</Text>
+      <Text style={styles.balance}>${balance.toFixed(2)}</Text>
+      <Text style={styles.changePositive}>+49.89%</Text>
+    </View>
+
+    <View style={styles.balanceRight}>
+      <Ionicons name="wallet" size={32} color="#fff" style={styles.walletIcon} />
+      <TouchableOpacity>
+        <Text style={styles.link}>Mostrar menos</Text>
+      </TouchableOpacity>
+      <Text style={styles.timestamp}>Hace 24h ⌄</Text>
+    </View>
+  </View>
+</View>
+
+
+        {/* Panel derecho: movimientos y más */}
+        <View style={styles.rightPanel}>
+          <FlatList
+            data={movimientos}
+            keyExtractor={(item) => item.id}
+            contentContainerStyle={{ paddingBottom: 16 }}
+            scrollEnabled={false}
+            renderItem={({ item }) => (
+              <View style={styles.itemCard}>
+                <View style={[styles.iconBox, { backgroundColor: item.color }]}>
+                  <Ionicons name={item.icono} size={22} color="#fff" />
+                </View>
+                <View style={styles.middleBox}>
+                  <Text style={styles.amount}>{item.cantidad.toFixed(6)}</Text>
+                  <Text style={styles.converted}>${(item.cantidad * 0.34).toFixed(2)}</Text>
+                </View>
+                <View style={styles.rightBox}>
+                  <Text style={styles.valor}>${item.valor.toFixed(3)}</Text>
+                  <Text style={{ color: item.variacion >= 0 ? 'green' : 'red' }}>
+                    {item.variacion >= 0 ? '+' : ''}
+                    {item.variacion.toFixed(2)}%
+                  </Text>
+                </View>
+              </View>
+            )}
+          />
+
+          <View style={styles.extraCard}>
+            <Text style={styles.extraText}>📌 Aquí podrías agregar estadísticas, historial u otra sección importante.</Text>
+          </View>
+        </View>
+      </ScrollView>
+
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: {
+    flex: 1,
+    backgroundColor: '#B7D1F4',
+    paddingTop: 50,
+    paddingHorizontal: 12,
+  },
+  header: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 28,
+    color: '#1A1A1A',
+    marginBottom: 24,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+  },
+  mainContent: {
     flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 16,
+    paddingBottom: 80,
+  },
+  leftPanel: {
+    flex: 1,
+  },
+  rightPanel: {
+    flex: 2,
+  },
+
+  // 💳 Tarjeta tipo bancaria con distribución solicitada
+  balanceCard: {
+    backgroundColor: '#2B3D6D',
+    borderRadius: 20,
+    padding: 20,
+    marginBottom: 16,
+  },
+  balanceContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    gap: 8,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  balanceLeft: {
+    flex: 1,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  balanceRight: {
+    alignItems: 'flex-end',
+    gap: 4,
   },
+  label: {
+    color: '#fff',
+    fontSize: 14,
+    marginBottom: 4,
+  },
+  balance: {
+    color: '#fff',
+    fontSize: 28,
+    fontWeight: 'bold',
+  },
+  changePositive: {
+    color: 'limegreen',
+    fontWeight: '600',
+    fontSize: 14,
+    marginTop: 4,
+  },
+  walletIcon: {
+    marginBottom: 4,
+  },
+  link: {
+    color: '#fff',
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  timestamp: {
+    color: '#ccc',
+    fontSize: 12,
+  },
+
+  // 🎯 Movimientos
+  itemCard: {
+    flexDirection: 'row',
+    backgroundColor: '#DDEBFB',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  iconBox: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  middleBox: {
+    flex: 1,
+  },
+  rightBox: {
+    alignItems: 'flex-end',
+  },
+  amount: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  converted: {
+    color: '#555',
+    fontSize: 13,
+  },
+  valor: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // ➕ Extra sección
+  extraCard: {
+    backgroundColor: '#E6F0FF',
+    borderRadius: 10,
+    padding: 16,
+    marginTop: 16,
+  },
+  extraText: {
+    fontSize: 14,
+    color: '#333',
+  },
+
+  
 });
+
