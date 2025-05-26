@@ -2,18 +2,36 @@ import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
 import React, { useState } from 'react';
 import {
-  FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View
+  FlatList,
+  Modal,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
+
+type Registro = {
+  id: string;
+  metodo: string;
+  banco: string;
+  monto: string;
+  fecha: string;
+  establecimiento: string;
+  categoria: string;
+};
+type RegistroInput = Omit<Registro, 'id'>;
 
 export default function ExploreScreen() {
   const [modalVisible, setModalVisible] = useState(false);
-  const [newItem, setNewItem] = useState({
+  const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [newItem, setNewItem] = useState<RegistroInput>({
     metodo: '',
     banco: '',
     monto: '',
     fecha: '',
     establecimiento: '',
-    categoria: ''
+    categoria: '',
   });
   const [data, setData] = useState<Registro[]>([]);
 
@@ -23,30 +41,34 @@ export default function ExploreScreen() {
     { key: 'monto', label: 'Monto' },
     { key: 'fecha', label: 'Fecha' },
     { key: 'establecimiento', label: 'Establecimiento' },
-    { key: 'categoria', label: 'Categoría' }
+    { key: 'categoria', label: 'Categoría' },
   ];
 
-  type Registro = {
-    id: string;
-    metodo: string;
-    banco: string;
-    monto: string;
-    fecha: string;
-    establecimiento: string;
-    categoria: string;
-  };
-
-
   const handleGuardar = () => {
-    const todosLlenos = Object.values(newItem).every(val => val.trim() !== '');
+    const todosLlenos = Object.values(newItem).every((val) => val.trim() !== '');
     if (!todosLlenos) {
       alert('Por favor completa todos los campos.');
       return;
     }
 
-    setData([...data, { id: Date.now().toString(), ...newItem }]);
+    if (editItemId) {
+      const actualizados = data.map((item) =>
+        item.id === editItemId ? { ...item, ...newItem } : item
+      );
+      setData(actualizados);
+      setEditItemId(null);
+    } else {
+      setData([...data, { ...newItem, id: Date.now().toString() }]);
+    }
+
     setModalVisible(false);
-    setNewItem({ metodo: '', banco: '', monto: '', fecha: '', establecimiento: '', categoria: ''
+    setNewItem({
+      metodo: '',
+      banco: '',
+      monto: '',
+      fecha: '',
+      establecimiento: '',
+      categoria: '',
     });
   };
 
@@ -66,7 +88,21 @@ export default function ExploreScreen() {
       </View>
 
       {/* Botón Añadir */}
-      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={() => {
+          setNewItem({
+            metodo: '',
+            banco: '',
+            monto: '',
+            fecha: '',
+            establecimiento: '',
+            categoria: '',
+          });
+          setEditItemId(null);
+          setModalVisible(true);
+        }}
+      >
         <Text style={styles.addButtonText}>Añadir</Text>
       </TouchableOpacity>
 
@@ -86,7 +122,7 @@ export default function ExploreScreen() {
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
-        renderItem={({ item, index }: { item: Registro; index: number }) => (
+        renderItem={({ item, index }) => (
           <View style={styles.tableRow}>
             <Text style={styles.cell}>{index + 1}</Text>
             <Text style={styles.cell}>{item.metodo}</Text>
@@ -96,12 +132,28 @@ export default function ExploreScreen() {
             <Text style={styles.cell}>{item.establecimiento}</Text>
             <Text style={styles.cell}>{item.categoria}</Text>
             <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around' }}>
-              <TouchableOpacity onPress={() => {/* lógica para el botón editar */ }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setNewItem({
+                    metodo: item.metodo,
+                    banco: item.banco,
+                    monto: item.monto,
+                    fecha: item.fecha,
+                    establecimiento: item.establecimiento,
+                    categoria: item.categoria,
+                  });
+
+                  setEditItemId(item.id);
+                  setModalVisible(true);
+                }}
+              >
                 <Ionicons name="create-outline" size={18} color={Colors.light.text} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => {
-                setData(data.filter(d => d.id !== item.id));
-              }}>
+              <TouchableOpacity
+                onPress={() => {
+                  setData(data.filter((d) => d.id !== item.id));
+                }}
+              >
                 <Ionicons name="trash-outline" size={18} color="red" />
               </TouchableOpacity>
             </View>
@@ -109,7 +161,7 @@ export default function ExploreScreen() {
         )}
       />
 
-      {/* Modal para añadir */}
+      {/* Modal para añadir/editar */}
       <Modal
         animationType="slide"
         transparent
@@ -123,15 +175,25 @@ export default function ExploreScreen() {
                 key={key}
                 placeholder={label}
                 style={styles.input}
-                onChangeText={text => setNewItem({ ...newItem, [key]: text })}
+                value={newItem[key as keyof RegistroInput] ?? ''} // fallback para evitar errores
+                onChangeText={(text) =>
+                  setNewItem((prev) => ({ ...prev, [key]: text }))
+                }
               />
             ))}
-            <TouchableOpacity style={styles.modalButton} onPress={handleGuardar}>
-              <Text style={{ color: '#fff', textAlign: 'center' }}>Guardar</Text>
+
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={handleGuardar}
+            >
+              <Text style={{ color: '#fff', textAlign: 'center' }}>
+                {editItemId ? 'Actualizar' : 'Guardar'}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
+
     </View>
   );
 }
