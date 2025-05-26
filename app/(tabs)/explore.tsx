@@ -1,110 +1,233 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { Colors } from '@/constants/Colors';
+import { Ionicons } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import {
+  FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View
+} from 'react-native';
 
-import { Collapsible } from '@/components/Collapsible';
-import { ExternalLink } from '@/components/ExternalLink';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
-import { IconSymbol } from '@/components/ui/IconSymbol';
+export default function ExploreScreen() {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [newItem, setNewItem] = useState({
+    metodo: '',
+    banco: '',
+    monto: '',
+    fecha: '',
+    establecimiento: '',
+    categoria: ''
+  });
+  const [data, setData] = useState<Registro[]>([]);
 
-export default function TabTwoScreen() {
+  const campos = [
+    { key: 'metodo', label: 'Método de pago' },
+    { key: 'banco', label: 'Banco' },
+    { key: 'monto', label: 'Monto' },
+    { key: 'fecha', label: 'Fecha' },
+    { key: 'establecimiento', label: 'Establecimiento' },
+    { key: 'categoria', label: 'Categoría' }
+  ];
+
+  type Registro = {
+    id: string;
+    metodo: string;
+    banco: string;
+    monto: string;
+    fecha: string;
+    establecimiento: string;
+    categoria: string;
+  };
+
+
+  const handleGuardar = () => {
+    const todosLlenos = Object.values(newItem).every(val => val.trim() !== '');
+    if (!todosLlenos) {
+      alert('Por favor completa todos los campos.');
+      return;
+    }
+
+    setData([...data, { id: Date.now().toString(), ...newItem }]);
+    setModalVisible(false);
+    setNewItem({ metodo: '', banco: '', monto: '', fecha: '', establecimiento: '', categoria: ''
+    });
+  };
+
+  const total = data.reduce((sum, item) => sum + Number(item.monto || 0), 0);
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Explore</ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image source={require('@/assets/images/react-logo.png')} style={{ alignSelf: 'center' }} />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Custom fonts">
-        <ThemedText>
-          Open <ThemedText type="defaultSemiBold">app/_layout.tsx</ThemedText> to see how to load{' '}
-          <ThemedText style={{ fontFamily: 'SpaceMono' }}>
-            custom fonts such as this one.
-          </ThemedText>
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/versions/latest/sdk/font">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful <ThemedText type="defaultSemiBold">react-native-reanimated</ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <View style={styles.container}>
+      {/* Título fijo */}
+      <View style={styles.header}>
+        <Text style={styles.headerText}>MI CARTERA INTELIGENTE</Text>
+      </View>
+
+      {/* Tarjeta de balance */}
+      <View style={styles.balanceCard}>
+        <Text style={styles.balanceText}>Balance Total</Text>
+        <Text style={styles.amount}>${total}</Text>
+      </View>
+
+      {/* Botón Añadir */}
+      <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
+        <Text style={styles.addButtonText}>Añadir</Text>
+      </TouchableOpacity>
+
+      {/* Encabezado de la tabla */}
+      <View style={styles.tableHeader}>
+        <Text style={styles.headerCell}>#</Text>
+        <Text style={styles.headerCell}>Método de pago</Text>
+        <Text style={styles.headerCell}>Banco</Text>
+        <Text style={styles.headerCell}>Monto</Text>
+        <Text style={styles.headerCell}>Fecha</Text>
+        <Text style={styles.headerCell}>Establecimiento</Text>
+        <Text style={styles.headerCell}>Categoría</Text>
+        <Text style={styles.headerCell}></Text>
+      </View>
+
+      {/* Tabla de registros */}
+      <FlatList
+        data={data}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item, index }: { item: Registro; index: number }) => (
+          <View style={styles.tableRow}>
+            <Text style={styles.cell}>{index + 1}</Text>
+            <Text style={styles.cell}>{item.metodo}</Text>
+            <Text style={styles.cell}>{item.banco}</Text>
+            <Text style={styles.cell}>${item.monto}</Text>
+            <Text style={styles.cell}>{item.fecha}</Text>
+            <Text style={styles.cell}>{item.establecimiento}</Text>
+            <Text style={styles.cell}>{item.categoria}</Text>
+            <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-around' }}>
+              <TouchableOpacity onPress={() => {/* lógica para el botón editar */ }}>
+                <Ionicons name="create-outline" size={18} color={Colors.light.text} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                setData(data.filter(d => d.id !== item.id));
+              }}>
+                <Ionicons name="trash-outline" size={18} color="red" />
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+      />
+
+      {/* Modal para añadir */}
+      <Modal
+        animationType="slide"
+        transparent
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            {campos.map(({ key, label }) => (
+              <TextInput
+                key={key}
+                placeholder={label}
+                style={styles.input}
+                onChangeText={text => setNewItem({ ...newItem, [key]: text })}
+              />
+            ))}
+            <TouchableOpacity style={styles.modalButton} onPress={handleGuardar}>
+              <Text style={{ color: '#fff', textAlign: 'center' }}>Guardar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
+  container: {
+    flex: 1,
+    backgroundColor: Colors.light.colorA,
+    paddingHorizontal: 8,
+    paddingTop: 40,
   },
-  titleContainer: {
+  header: {
+    backgroundColor: Colors.light.colorD,
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+    marginBottom: 10,
+  },
+  headerText: {
+    color: Colors.light.text,
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
+  balanceCard: {
+    backgroundColor: Colors.light.colorF,
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+  },
+  balanceText: {
+    color: Colors.light.card,
+    fontSize: 16,
+  },
+  amount: {
+    color: Colors.light.card,
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  addButton: {
+    backgroundColor: Colors.light.colorE,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  addButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  tableHeader: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
+    backgroundColor: Colors.light.colorC,
+    padding: 8,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  headerCell: {
+    flex: 1,
+    fontWeight: 'bold',
+    fontSize: 12,
+    color: Colors.light.text,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.light.card,
+    padding: 10,
+    marginBottom: 2,
+    borderRadius: 6,
+  },
+  cell: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.light.text,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '90%',
+  },
+  input: {
+    borderWidth: 1,
+    padding: 8,
+    marginBottom: 10,
+  },
+  modalButton: {
+    backgroundColor: Colors.light.colorE,
+    padding: 10,
+    borderRadius: 6,
   },
 });
