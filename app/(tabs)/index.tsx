@@ -1,6 +1,13 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
-import React, { useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Alert, Dimensions, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
+const scaleFont = (size: number) => {
+  const newSize = (size * width) / 375;
+  return Math.max(Math.min(newSize, size + 6), size - 4); // mínimo y máximo
+};
 
 type IconoValido = 'wallet' | 'card' | 'cash-outline';
 
@@ -42,6 +49,18 @@ export default function HomeScreen() {
     },
   ]);
 
+  const [currentWidth, setCurrentWidth] = useState(width);
+
+  useEffect(() => {
+    const updateDimensions = () => {
+      setCurrentWidth(Dimensions.get('window').width);
+    };
+    const subscription = Dimensions.addEventListener('change', updateDimensions);
+    return () => {
+      subscription.remove();
+    };
+  }, []);
+
   const handleFooterAction = (action: string) => {
     switch (action) {
       case 'wallet':
@@ -56,42 +75,50 @@ export default function HomeScreen() {
     }
   };
 
+  const isLargeScreen = currentWidth > 768;
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>CARTERA INTELIGENTE</Text>
 
-      <ScrollView contentContainerStyle={styles.mainContent}>
-        {/* Tarjeta izquierda: Balance Total */}
-        <View style={styles.balanceCard}>
-  <View style={styles.balanceContent}>
-    <View style={styles.balanceLeft}>
-      <Text style={styles.label}>Balance Total</Text>
-      <Text style={styles.balance}>${balance.toFixed(2)}</Text>
-      <Text style={styles.changePositive}>+49.89%</Text>
-    </View>
+      <ScrollView contentContainerStyle={[
+        styles.mainContent,
+        isLargeScreen ? styles.mainContentLargeScreen : styles.mainContentSmallScreen
+      ]}>
+        <View style={[
+          styles.balanceCard,
+          isLargeScreen ? styles.balanceCardLargeScreen : styles.balanceCardSmallScreen
+        ]}>
+          <View style={styles.balanceContent}>
+            <View style={styles.balanceLeft}>
+              <Text style={styles.label}>Balance Total</Text>
+              <Text style={styles.balance}>${balance.toFixed(2)}</Text>
+              <Text style={styles.changePositive}>+49.89%</Text>
+            </View>
 
-    <View style={styles.balanceRight}>
-      <Ionicons name="wallet" size={32} color="#fff" style={styles.walletIcon} />
-      <TouchableOpacity>
-        <Text style={styles.link}>Mostrar menos</Text>
-      </TouchableOpacity>
-      <Text style={styles.timestamp}>Hace 24h ⌄</Text>
-    </View>
-  </View>
-</View>
+            <View style={styles.balanceRight}>
+              <Ionicons name="wallet" size={scaleFont(32)} color="#fff" style={styles.walletIcon} />
+              <TouchableOpacity>
+                <Text style={styles.link}>Mostrar menos</Text>
+              </TouchableOpacity>
+              <Text style={styles.timestamp}>Hace 24h ⌄</Text>
+            </View>
+          </View>
+        </View>
 
-
-        {/* Panel derecho: movimientos y más */}
-        <View style={styles.rightPanel}>
+        <View style={[
+          styles.rightSectionContainer,
+          isLargeScreen ? styles.rightSectionContainerLargeScreen : styles.rightSectionContainerSmallScreen
+        ]}>
           <FlatList
             data={movimientos}
             keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingBottom: 16 }}
+            contentContainerStyle={{ paddingBottom: height * 0.02 }}
             scrollEnabled={false}
             renderItem={({ item }) => (
               <View style={styles.itemCard}>
                 <View style={[styles.iconBox, { backgroundColor: item.color }]}>
-                  <Ionicons name={item.icono} size={22} color="#fff" />
+                  <Ionicons name={item.icono} size={scaleFont(22)} color="#fff" />
                 </View>
                 <View style={styles.middleBox}>
                   <Text style={styles.amount}>{item.cantidad.toFixed(6)}</Text>
@@ -99,7 +126,7 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.rightBox}>
                   <Text style={styles.valor}>${item.valor.toFixed(3)}</Text>
-                  <Text style={{ color: item.variacion >= 0 ? 'green' : 'red' }}>
+                  <Text style={{ color: item.variacion >= 0 ? 'green' : 'red', fontSize: scaleFont(13) }}>
                     {item.variacion >= 0 ? '+' : ''}
                     {item.variacion.toFixed(2)}%
                   </Text>
@@ -122,38 +149,58 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#B7D1F4',
-    paddingTop: 50,
-    paddingHorizontal: 12,
+    paddingTop: height * 0.06,
+    paddingHorizontal: width * 0.03,
   },
   header: {
     textAlign: 'center',
     fontWeight: 'bold',
-    fontSize: 28,
+    fontSize: scaleFont(26),
     color: '#1A1A1A',
-    marginBottom: 24,
-    letterSpacing: 1.2,
+    marginBottom: height * 0.03,
+    letterSpacing: 0.8,
     textTransform: 'uppercase',
   },
+
   mainContent: {
-    flexDirection: 'row',
+    paddingBottom: height * 0.1,
+  },
+  mainContentSmallScreen: {
+    flexDirection: 'column',
     alignItems: 'flex-start',
-    gap: 16,
-    paddingBottom: 80,
+    gap: height * 0.02,
   },
-  leftPanel: {
-    flex: 1,
-  },
-  rightPanel: {
-    flex: 2,
+  mainContentLargeScreen: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: width * 0.04,
   },
 
-  // 💳 Tarjeta tipo bancaria con distribución solicitada
   balanceCard: {
     backgroundColor: '#2B3D6D',
     borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
+    padding: width * 0.04,
   },
+  balanceCardSmallScreen: {
+    marginBottom: height * 0.02,
+    width: '100%',
+  },
+  balanceCardLargeScreen: {
+    width: '48%',
+    marginBottom: 0,
+  },
+
+  rightSectionContainer: {
+    flexDirection: 'column',
+  },
+  rightSectionContainerSmallScreen: {
+    width: '100%',
+  },
+  rightSectionContainerLargeScreen: {
+    width: '48%',
+  },
+
   balanceContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -164,85 +211,83 @@ const styles = StyleSheet.create({
   },
   balanceRight: {
     alignItems: 'flex-end',
-    gap: 4,
+    gap: height * 0.005,
   },
   label: {
     color: '#fff',
-    fontSize: 14,
-    marginBottom: 4,
+    fontSize: scaleFont(14),
+    marginBottom: height * 0.005,
   },
   balance: {
     color: '#fff',
-    fontSize: 28,
+    fontSize: scaleFont(28),
     fontWeight: 'bold',
   },
   changePositive: {
     color: 'limegreen',
     fontWeight: '600',
-    fontSize: 14,
-    marginTop: 4,
+    fontSize: scaleFont(14),
+    marginTop: height * 0.005,
   },
   walletIcon: {
-    marginBottom: 4,
+    marginBottom: height * 0.005,
   },
   link: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: scaleFont(12),
     textDecorationLine: 'underline',
   },
   timestamp: {
     color: '#ccc',
-    fontSize: 12,
+    fontSize: scaleFont(12),
   },
 
-  // 🎯 Movimientos
   itemCard: {
     flexDirection: 'row',
     backgroundColor: '#DDEBFB',
     borderRadius: 10,
-    padding: 12,
-    marginBottom: 10,
+    padding: width * 0.03,
+    marginBottom: height * 0.012,
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   iconBox: {
-    width: 38,
-    height: 38,
+    width: width * 0.1,
+    height: width * 0.1,
     borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: width * 0.03,
   },
   middleBox: {
-    flex: 1,
   },
   rightBox: {
     alignItems: 'flex-end',
   },
   amount: {
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
+    textAlign: 'right',
   },
   converted: {
     color: '#555',
-    fontSize: 13,
+    fontSize: scaleFont(13),
+    textAlign: 'right',
   },
   valor: {
     fontWeight: 'bold',
-    fontSize: 14,
+    fontSize: scaleFont(14),
+    textAlign: 'right',
   },
 
-  // ➕ Extra sección
   extraCard: {
     backgroundColor: '#E6F0FF',
     borderRadius: 10,
-    padding: 16,
-    marginTop: 16,
+    padding: width * 0.04,
+    marginTop: height * 0.02,
   },
   extraText: {
-    fontSize: 14,
+    fontSize: scaleFont(14),
     color: '#333',
   },
-
-  
 });
-
