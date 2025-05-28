@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   FlatList,
   Modal,
@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
+import RNPickerSelect from 'react-native-picker-select';
 
 type Registro = {
   id: string;
@@ -24,10 +25,14 @@ type Registro = {
 type RegistroInput = Omit<Registro, 'id'>;
 
 export default function ExploreScreen() {
+  const API_URL = 'http://10.0.2.2/bdinter-cartera/operaciones';
+
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [fechaTemporal, setFechaTemporal] = useState<Date | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editItemId, setEditItemId] = useState<string | null>(null);
+  const [data, setData] = useState<Registro[]>([]);
+  const [bancos, setBancos] = useState<{ label: string; value: string }[]>([]);
+  const [categorias, setCategorias] = useState<{ label: string; value: string }[]>([]);
   const [newItem, setNewItem] = useState<RegistroInput>({
     metodo: '',
     banco: '',
@@ -36,7 +41,6 @@ export default function ExploreScreen() {
     establecimiento: '',
     categoria: '',
   });
-  const [data, setData] = useState<Registro[]>([]);
 
   const campos = [
     { key: 'metodo', label: 'Método de pago' },
@@ -47,54 +51,98 @@ export default function ExploreScreen() {
     { key: 'categoria', label: 'Categoría' },
   ];
 
-  const handleGuardar = () => {
+  useEffect(() => {
+    // Cargar operaciones
+    fetch(`${API_URL}/read.php`)
+      .then(res => res.json())
+      .then((result) => {
+        const datosConvertidos = result.map((item: any) => ({
+          id: item.id,
+          metodo: item.tipo_pago === 'T' ? 'Tarjeta' : 'Efectivo',
+          banco: item.banco,
+          monto: item.monto,
+          fecha: item.fecha,
+          establecimiento: '-', // Placeholder
+          categoria: item.categoria,
+        }));
+        setData(datosConvertidos);
+      });
+
+    // Cargar bancos
+    fetch('http://10.0.2.2/bdinter-cartera/bancos/read.php')
+      .then(res => res.json())
+      .then(result => {
+        const opciones = result.map((b: any) => ({
+          label: b.nombre,
+          value: b.id,
+        }));
+        setBancos(opciones);
+      });
+
+    // Cargar categorías
+    fetch('http://10.0.2.2/bdinter-cartera/categorias/read.php')
+      .then(res => res.json())
+      .then(result => {
+        const opciones = result.map((c: any) => ({
+          label: c.establecimiento,
+          value: c.id,
+        }));
+        setCategorias(opciones);
+      });
+  }, []);
+
+  const handleGuardar = async () => {
     const todosLlenos = Object.values(newItem).every((val) => val.trim() !== '');
-    if (!todosLlenos) {
-      alert('Por favor completa todos los campos.');
-      return;
-    }
-    if (isNaN(Number(newItem.monto))) {
-      alert('El monto debe ser un número válido.');
-      return;
-    }
+    if (!todosLlenos) return alert('Por favor completa todos los campos.');
+    if (isNaN(Number(newItem.monto))) return alert('El monto debe ser numérico.');
 
-    if (editItemId) {
-      const actualizados = data.map((item) =>
-        item.id === editItemId ? { ...item, ...newItem } : item
-      );
-      setData(actualizados);
+    const formData = new FormData();
+    formData.append('tipo_operacion', 'Ingreso');
+    formData.append('tipo_pago', newItem.metodo === 'Tarjeta' ? 'T' : 'E');
+    formData.append('monto', newItem.monto);
+    formData.append('fecha', newItem.fecha);
+    formData.append('id_categoria', newItem.categoria);
+    formData.append('usuario_id', '1');
+    formData.append('banco_id', newItem.banco);
+
+    const endpoint = editItemId ? 'update.php' : 'create.php';
+    if (editItemId) formData.append('id', editItemId);
+
+    try {
+      await fetch(`${API_URL}/${endpoint}`, {
+        method: 'POST',
+        body: formData,
+      });
+      const refreshed = await fetch(`${API_URL}/read.php`).then(r => r.json());
+      setData(refreshed);
+      setModalVisible(false);
       setEditItemId(null);
-    } else {
-      setData([...data, { ...newItem, id: Date.now().toString() }]);
+      setNewItem({
+        metodo: '',
+        banco: '',
+        monto: '',
+        fecha: '',
+        establecimiento: '',
+        categoria: '',
+      });
+    } catch (err) {
+      console.error('Error al guardar:', err);
     }
-
-    setModalVisible(false);
-    setNewItem({
-      metodo: '',
-      banco: '',
-      monto: '',
-      fecha: '',
-      establecimiento: '',
-      categoria: '',
-    });
   };
 
   const total = data.reduce((sum, item) => sum + Number(item.monto || 0), 0);
 
   return (
     <View style={styles.container}>
-      {/* Título fijo */}
       <View style={styles.header}>
         <Text style={styles.headerText}>MI CARTERA INTELIGENTE</Text>
       </View>
 
-      {/* Tarjeta de balance */}
       <View style={styles.balanceCard}>
         <Text style={styles.balanceText}>Balance Total</Text>
         <Text style={styles.amount}>${total}</Text>
       </View>
 
-      {/* Botón Añadir */}
       <TouchableOpacity
         style={styles.addButton}
         onPress={() => {
@@ -113,7 +161,6 @@ export default function ExploreScreen() {
         <Text style={styles.addButtonText}>Añadir</Text>
       </TouchableOpacity>
 
-      {/* Encabezado de la tabla */}
       <View style={styles.tableHeader}>
         <Text style={styles.headerCell}>#</Text>
         <Text style={styles.headerCell}>Método de pago</Text>
@@ -125,7 +172,6 @@ export default function ExploreScreen() {
         <Text style={styles.headerCell}></Text>
       </View>
 
-      {/* Tabla de registros */}
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
@@ -149,7 +195,6 @@ export default function ExploreScreen() {
                     establecimiento: item.establecimiento,
                     categoria: item.categoria,
                   });
-
                   setEditItemId(item.id);
                   setModalVisible(true);
                 }}
@@ -157,7 +202,13 @@ export default function ExploreScreen() {
                 <Ionicons name="create-outline" size={18} color={Colors.light.text} />
               </TouchableOpacity>
               <TouchableOpacity
-                onPress={() => {
+                onPress={async () => {
+                  const formData = new FormData();
+                  formData.append('id', item.id);
+                  await fetch(`${API_URL}/delete.php`, {
+                    method: 'POST',
+                    body: formData,
+                  });
                   setData(data.filter((d) => d.id !== item.id));
                 }}
               >
@@ -168,7 +219,6 @@ export default function ExploreScreen() {
         )}
       />
 
-      {/* Modal para añadir/editar */}
       <Modal
         animationType="slide"
         transparent
@@ -181,19 +231,16 @@ export default function ExploreScreen() {
               if (key === 'fecha') {
                 return (
                   <View key={key} style={{ marginBottom: 10 }}>
-                    <Text style={{ marginBottom: 4 }}>{label}</Text>
+                    <Text>{label}</Text>
                     <TouchableOpacity
                       onPress={() => setShowDatePicker(true)}
                       style={styles.input}
                     >
                       <Text>{newItem.fecha ? newItem.fecha : 'Seleccionar fecha'}</Text>
                     </TouchableOpacity>
-
-                    {/* Picker se muestra aquí fuera del Touchable */}
                     <DateTimePickerModal
                       isVisible={showDatePicker}
                       mode="date"
-                      locale="es" // Opcional: para que muestre en español
                       onConfirm={(date) => {
                         const fechaFormateada = date.toISOString().split('T')[0];
                         setNewItem((prev) => ({ ...prev, fecha: fechaFormateada }));
@@ -205,24 +252,34 @@ export default function ExploreScreen() {
                 );
               }
 
-
-              if (key === 'monto') {
+              if (key === 'banco') {
                 return (
-                  <TextInput
-                    key={key}
-                    placeholder={label}
-                    style={styles.input}
-                    keyboardType="numeric"
-                    value={newItem.monto}
-                    onChangeText={(text) => {
-                      const soloNumeros = text.replace(/[^0-9.]/g, '');
-                      setNewItem((prev) => ({ ...prev, monto: soloNumeros }));
-                    }}
-                  />
+                  <View key={key} style={{ marginBottom: 10 }}>
+                    <Text>{label}</Text>
+                    <RNPickerSelect
+                      onValueChange={(value) => setNewItem((prev) => ({ ...prev, banco: value }))}
+                      items={bancos}
+                      value={newItem.banco}
+                      placeholder={{ label: 'Selecciona un banco', value: '' }}
+                    />
+                  </View>
                 );
               }
 
-              // Todos los demás campos
+              if (key === 'categoria') {
+                return (
+                  <View key={key} style={{ marginBottom: 10 }}>
+                    <Text>{label}</Text>
+                    <RNPickerSelect
+                      onValueChange={(value) => setNewItem((prev) => ({ ...prev, categoria: value }))}
+                      items={categorias}
+                      value={newItem.categoria}
+                      placeholder={{ label: 'Selecciona una categoría', value: '' }}
+                    />
+                  </View>
+                );
+              }
+
               return (
                 <TextInput
                   key={key}
@@ -264,104 +321,25 @@ export default function ExploreScreen() {
           </View>
         </View>
       </Modal>
-
-
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.light.colorA,
-    paddingHorizontal: 8,
-    paddingTop: 40,
-  },
-  header: {
-    backgroundColor: Colors.light.colorD,
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 10,
-    marginBottom: 10,
-  },
-  headerText: {
-    color: Colors.light.text,
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  balanceCard: {
-    backgroundColor: Colors.light.colorF,
-    padding: 20,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
-  balanceText: {
-    color: Colors.light.card,
-    fontSize: 16,
-  },
-  amount: {
-    color: Colors.light.card,
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  addButton: {
-    backgroundColor: Colors.light.colorE,
-    padding: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  addButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-  },
-  tableHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.light.colorC,
-    padding: 8,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-  },
-  headerCell: {
-    flex: 1,
-    fontWeight: 'bold',
-    fontSize: 12,
-    color: Colors.light.text,
-  },
-  tableRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.light.card,
-    padding: 10,
-    marginBottom: 2,
-    borderRadius: 6,
-  },
-  cell: {
-    flex: 1,
-    fontSize: 12,
-    color: Colors.light.text,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    width: '90%',
-  },
-  input: {
-    borderWidth: 1,
-    padding: 8,
-    marginBottom: 10,
-  },
-  modalButton: {
-    backgroundColor: Colors.light.colorE,
-    padding: 10,
-    borderRadius: 6,
-  },
+  container: { flex: 1, backgroundColor: Colors.light.colorA, paddingHorizontal: 8, paddingTop: 40 },
+  header: { backgroundColor: Colors.light.colorD, padding: 10, alignItems: 'center', borderRadius: 10, marginBottom: 10 },
+  headerText: { color: Colors.light.text, fontSize: 20, fontWeight: 'bold' },
+  balanceCard: { backgroundColor: Colors.light.colorF, padding: 20, borderRadius: 10, marginBottom: 20 },
+  balanceText: { color: Colors.light.card, fontSize: 16 },
+  amount: { color: Colors.light.card, fontSize: 24, fontWeight: 'bold' },
+  addButton: { backgroundColor: Colors.light.colorE, padding: 10, borderRadius: 8, alignItems: 'center', marginBottom: 10 },
+  addButtonText: { color: '#fff', fontWeight: 'bold' },
+  tableHeader: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: Colors.light.colorC, padding: 8, borderTopLeftRadius: 8, borderTopRightRadius: 8 },
+  headerCell: { flex: 1, fontWeight: 'bold', fontSize: 12, color: Colors.light.text },
+  tableRow: { flexDirection: 'row', justifyContent: 'space-between', backgroundColor: Colors.light.card, padding: 10, marginBottom: 2, borderRadius: 6 },
+  cell: { flex: 1, fontSize: 12, color: Colors.light.text },
+  modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' },
+  modalContent: { backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '90%' },
+  input: { borderWidth: 1, padding: 8, marginBottom: 10 },
+  modalButton: { backgroundColor: Colors.light.colorE, padding: 10, borderRadius: 6 },
 });
