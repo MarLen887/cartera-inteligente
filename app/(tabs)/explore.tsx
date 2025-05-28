@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import DateTimePickerModal from 'react-native-modal-datetime-picker';
 
 type Registro = {
   id: string;
@@ -23,6 +24,8 @@ type Registro = {
 type RegistroInput = Omit<Registro, 'id'>;
 
 export default function ExploreScreen() {
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [fechaTemporal, setFechaTemporal] = useState<Date | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [editItemId, setEditItemId] = useState<string | null>(null);
   const [newItem, setNewItem] = useState<RegistroInput>({
@@ -48,6 +51,10 @@ export default function ExploreScreen() {
     const todosLlenos = Object.values(newItem).every((val) => val.trim() !== '');
     if (!todosLlenos) {
       alert('Por favor completa todos los campos.');
+      return;
+    }
+    if (isNaN(Number(newItem.monto))) {
+      alert('El monto debe ser un número válido.');
       return;
     }
 
@@ -170,29 +177,94 @@ export default function ExploreScreen() {
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            {campos.map(({ key, label }) => (
-              <TextInput
-                key={key}
-                placeholder={label}
-                style={styles.input}
-                value={newItem[key as keyof RegistroInput] ?? ''} // fallback para evitar errores
-                onChangeText={(text) =>
-                  setNewItem((prev) => ({ ...prev, [key]: text }))
-                }
-              />
-            ))}
+            {campos.map(({ key, label }) => {
+              if (key === 'fecha') {
+                return (
+                  <View key={key} style={{ marginBottom: 10 }}>
+                    <Text style={{ marginBottom: 4 }}>{label}</Text>
+                    <TouchableOpacity
+                      onPress={() => setShowDatePicker(true)}
+                      style={styles.input}
+                    >
+                      <Text>{newItem.fecha ? newItem.fecha : 'Seleccionar fecha'}</Text>
+                    </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={handleGuardar}
-            >
-              <Text style={{ color: '#fff', textAlign: 'center' }}>
-                {editItemId ? 'Actualizar' : 'Guardar'}
-              </Text>
-            </TouchableOpacity>
+                    {/* Picker se muestra aquí fuera del Touchable */}
+                    <DateTimePickerModal
+                      isVisible={showDatePicker}
+                      mode="date"
+                      locale="es" // Opcional: para que muestre en español
+                      onConfirm={(date) => {
+                        const fechaFormateada = date.toISOString().split('T')[0];
+                        setNewItem((prev) => ({ ...prev, fecha: fechaFormateada }));
+                        setShowDatePicker(false);
+                      }}
+                      onCancel={() => setShowDatePicker(false)}
+                    />
+                  </View>
+                );
+              }
+
+
+              if (key === 'monto') {
+                return (
+                  <TextInput
+                    key={key}
+                    placeholder={label}
+                    style={styles.input}
+                    keyboardType="numeric"
+                    value={newItem.monto}
+                    onChangeText={(text) => {
+                      const soloNumeros = text.replace(/[^0-9.]/g, '');
+                      setNewItem((prev) => ({ ...prev, monto: soloNumeros }));
+                    }}
+                  />
+                );
+              }
+
+              // Todos los demás campos
+              return (
+                <TextInput
+                  key={key}
+                  placeholder={label}
+                  style={styles.input}
+                  value={newItem[key as keyof RegistroInput] ?? ''}
+                  onChangeText={(text) => {
+                    setNewItem((prev) => ({ ...prev, [key]: text }));
+                  }}
+                />
+              );
+            })}
+
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: Colors.light.colorF }]}
+                onPress={() => {
+                  setModalVisible(false);
+                  setEditItemId(null);
+                  setNewItem({
+                    metodo: '',
+                    banco: '',
+                    monto: '',
+                    fecha: '',
+                    establecimiento: '',
+                    categoria: '',
+                  });
+                }}
+              >
+                <Text style={{ color: '#fff', textAlign: 'center' }}>Cancelar</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={styles.modalButton} onPress={handleGuardar}>
+                <Text style={{ color: '#fff', textAlign: 'center' }}>
+                  {editItemId ? 'Actualizar' : 'Guardar'}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
+
 
     </View>
   );
