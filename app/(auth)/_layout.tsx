@@ -1,34 +1,43 @@
 // app/_layout.tsx
 import { Stack } from 'expo-router';
 import React from 'react';
-// Importa otros hooks o componentes que puedas necesitar, como un contexto de autenticación
 
 export default function RootLayout() {
-  // Aquí podrías tener lógica para determinar si el usuario está autenticado
-  // y mostrar condicionalmente el stack de (auth) o el stack principal de la app.
-  // Por ahora, nos enfocaremos en cómo se presenta el stack (auth).
-
   return (
-    <Stack>
-      {/* Esta es la pantalla que representa a todo tu grupo (auth) */}
+    <Stack
+      // Si tienes screenOptions globales para este Stack, irían aquí.
+      // Por ejemplo, para un color de fondo de encabezado global:
+      // screenOptions={{
+      //   headerStyle: { backgroundColor: 'black' }, // Ejemplo de color de fondo de encabezado
+      //   headerTintColor: 'white', // Color de texto global para el encabezado
+      // }}
+    >
+      {/* Configuración para el grupo de autenticación (auth) */}
       <Stack.Screen
         name="(auth)" // Se refiere al directorio app/(auth)
         options={{
-          headerShown: false, // ¡Esto ocultará el encabezado que muestra "(auth)"!
+          // Idealmente, headerShown: false; debería ocultar este encabezado por completo.
+          // Si eso no funciona y quieres que el texto "(auth)" se mimetice con el fondo:
+          title: '(auth)', // Asegurarnos de que este es el texto que se muestra
+          headerStyle: {
+            backgroundColor: 'black', // Define el color de fondo del encabezado. Ajusta si es diferente.
+          },
+          headerTintColor: 'black', // Hace que el color del texto del título sea igual al fondo.
+          // Si headerShown: false no funciona, asegúrate de que no esté explícitamente en true aquí.
+          // headerShown: true, // O simplemente omite headerShown si quieres mostrarlo pero con texto invisible.
         }}
       />
 
-      {/* Aquí irían otras pantallas o grupos de tu aplicación principal */}
-      {/* Por ejemplo, si tienes un grupo de pestañas para la app principal: */}
+      {/* Configuración para el grupo principal de pestañas (tabs) */}
       <Stack.Screen
-        name="(tabs)" // Suponiendo que tienes app/(tabs) para tu contenido principal
+        name="(tabs)" // Se refiere al directorio app/(tabs)
         options={{
-          headerShown: false, // Usualmente también se oculta si (tabs) tiene su propio header
+          // Si (tabs) tiene su propio header, usualmente querrías ocultar este
+          headerShown: false,
         }}
       />
 
       {/* Otras pantallas a nivel raíz si las tienes */}
-      {/* <Stack.Screen name="modal" options={{ presentation: 'modal' }} /> */}
     </Stack>
   );
 }
