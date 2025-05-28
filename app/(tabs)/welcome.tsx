@@ -1,19 +1,25 @@
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Dimensions, Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-const { width, height } = Dimensions.get('window');
+import { Dimensions, Image, Platform, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-const scaleFont = (size: number) => {
-  const newSize = (size * width) / 375;
-  return Math.max(Math.min(newSize, size + 6), size - 4);
+const { width, height } = Dimensions.get('window');
+const baseWidth = 375;
+
+// 🧠 Escalado con control para web
+const scale = (size: number) => {
+  const newSize = (width / baseWidth) * size;
+  if (Platform.OS === 'web') {
+    return Math.min(newSize, size * 1.15);
+  }
+  return Math.max(Math.min(newSize, size + 6), size - 2);
 };
 
 export default function Welcome() {
-  const router = useRouter(); // ✅ Usa useRouter en vez de navigation
+  const router = useRouter();
 
   const handleNavigate = () => {
-   router.push('../');// ✅ Ruta exacta hacia el archivo index.tsx
+    router.push('../'); // ✅ Ir hacia index.tsx
   };
 
   return (
@@ -22,9 +28,8 @@ export default function Welcome() {
         Ahorrín no duerme,{"\n"}para que tú descanses.
       </Text>
 
-      {/* Imagen del puerquito, cambia la ruta si la tienes en otra carpeta */}
       <Image
-      source={require('@/assets/images/ahorrin.png')}// Coloca tu imagen aquí o cambia por uri si es en línea
+        source={require('@/assets/images/ahorrin.png')}
         style={styles.image}
         resizeMode="contain"
       />
@@ -34,7 +39,7 @@ export default function Welcome() {
       </Text>
 
       <TouchableOpacity onPress={handleNavigate} style={styles.iconContainer}>
-        <Ionicons name="arrow-forward-circle" size={50} color="#fff" />
+        <Ionicons name="arrow-forward-circle" size={scale(50)} color="#fff" />
       </TouchableOpacity>
     </View>
   );
@@ -43,35 +48,35 @@ export default function Welcome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0B2C79', // Azul profundo
+    backgroundColor: '#0B2C79',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 24,
+    paddingHorizontal: scale(24),
+    paddingVertical: scale(40),
   },
- title: {
-  fontSize: scaleFont(22),
-  fontWeight: 'bold',
-  color: '#fff',
-  textAlign: 'center',
-  marginBottom: 24,
-  lineHeight: scaleFont(26),
-},
-subtitle: {
-  fontSize: scaleFont(16),
-  color: '#fff',
-  textAlign: 'center',
-  marginBottom: 40,
-  lineHeight: scaleFont(20),
-},
-
+  title: {
+    fontSize: scale(22),
+    fontWeight: 'bold',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: scale(24),
+    lineHeight: scale(28),
+  },
   image: {
-    width: width * 0.55,
-    height: width * 0.55,
-    marginBottom: 24,
+    width: width < 500 ? width * 0.5 : 240, // 📐 imagen adaptada a pantallas grandes
+    height: width < 500 ? width * 0.5 : 240,
+    marginBottom: scale(24),
+  },
+  subtitle: {
+    fontSize: scale(16),
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: scale(40),
+    lineHeight: scale(22),
   },
   iconContainer: {
     backgroundColor: '#F9A826',
-    padding: 10,
-    borderRadius: 50,
+    padding: scale(12),
+    borderRadius: scale(50),
   },
 });
