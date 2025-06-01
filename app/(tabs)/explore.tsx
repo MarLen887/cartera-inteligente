@@ -158,13 +158,34 @@ export default function ExploreScreen() {
               >
                 <Ionicons name="create-outline" size={18} color={Colors.light.text} />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() => {
-                  setData(data.filter((d) => d.id !== item.id));
-                }}
-              >
-                <Ionicons name="trash-outline" size={18} color="red" />
-              </TouchableOpacity>
+               <TouchableOpacity
+    onPress={() => {
+      console.log('Botón de eliminar presionado para ID:', item.id); // Log para depuración
+      Alert.alert(
+        "Confirmar Eliminación",
+        "¿Estás seguro de que quieres eliminar este registro?", // Mensaje del Alert
+        [
+          {
+            text: "Cancelar", 
+            onPress: () => console.log("Eliminación cancelada por el usuario."), // Opcional: acción al cancelar
+            style: "cancel" 
+          },
+          {
+            text: "Eliminar", 
+            onPress: () => {
+              console.log("Confirmado eliminar ID:", item.id); // Log para depuración
+              // Actualiza el estado 'data' filtrando el elemento a eliminar
+              setData(prevData => prevData.filter(d => d.id !== item.id));
+            },
+            style: "destructive"
+          }
+        ],
+        { cancelable: true } // Permite cerrar el Alert tocando fuera en Android (opcional)
+      );
+    }}
+  >
+    <Ionicons name="trash-outline" size={18} color="red" />
+  </TouchableOpacity>
             </View>
           </View>
         )}
